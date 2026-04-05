@@ -2,89 +2,227 @@
 \usepackage[utf8]{inputenc}
 \usepackage[french]{babel}
 \usepackage[T1]{fontenc}
-\usepackage{amsmath, amsfonts, amssymb, graphicx, geometry, xcolor, titlesec, hyperref, listings}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
 
 \geometry{margin=2.5cm}
-\titleformat{\section}{\Large\bfseries\color{blue!70!black}}{}{0em}{}
-\titleformat{\subsection}{\large\bfseries\color{black!80}}{}{0em}{}
+
+\definecolor{codeblue}{RGB}{0,70,160}
+\definecolor{codegray}{RGB}{245,245,245}
+\definecolor{passgreen}{RGB}{0,130,60}
 
 \lstset{
-    language=bash,
-    basicstyle=\ttfamily\scriptsize,
+    basicstyle=\ttfamily\small,
     breaklines=true,
     frame=single,
-    backgroundcolor=\color{black!5}
+    backgroundcolor=\color{codegray},
+    rulecolor=\color{gray!50},
+    keywordstyle=\bfseries\color{codeblue},
+    commentstyle=\itshape\color{gray},
+    showstringspaces=false,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    numbersep=8pt
 }
 
-\title{Rapport de Travaux Pratiques — TP1 \\ \large IEEE 754 & Arithmetique Flottante}
-\author{NEUSSI NJIETCHEU PATRICE EUGÈNE \\ Matricule : 24P820}
-\date{\today}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{NEUSSI Patrice -- 24P820}
+\lhead{Realite Augmentee -- TP1}
+\rfoot{\thepage}
+
+\titleformat{\section}{\Large\bfseries\color{codeblue}}{}{0em}{\thesection\quad}
+\titleformat{\subsection}{\large\bfseries}{}{0em}{\thesubsection\quad}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=codeblue,
+    urlcolor=codeblue
+}
 
 \begin{document}
-\maketitle
+
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\huge\bfseries Rapport de Travaux Pratiques\par}
+    \vspace{1cm}
+    {\LARGE\bfseries\color{codeblue} TP1 -- IEEE 754 \& Arithmetique Flottante\par}
+    \vspace{1.5cm}
+    \rule{\linewidth}{0.5pt}
+    \vspace{0.5cm}
+    {\large Cours : Realite Augmentee FROM SCRATCH\par}
+    {\large Module 01 -- NkMath\par}
+    \vspace{0.5cm}
+    \rule{\linewidth}{0.5pt}
+    \vspace{2cm}
+    {\large\textbf{Etudiant :} NEUSSI NJIETCHEU PATRICE EUGENE\par}
+    {\large\textbf{Matricule :} 24P820\par}
+    \vspace{2cm}
+    {\large Repository GitHub :\par}
+    \href{https://github.com/neussi/RA_TP1_Arithmetique_Flottante}{https://github.com/neussi/RA\_TP1\_Arithmetique\_Flottante}
+    \vfill
+    {\large \today\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
 
 \section{Introduction}
-Ce document présente le travail réalisé pour le module sur \textbf{IEEE 754 & Arithmetique Flottante}.
-L'objectif est d'implémenter les algorithmes fondamentaux en partant de zéro (Zero STL, C++17).
 
-\section{Concepts Théoriques}
-Ce TP traite de la precision numerique indispensable en simulation 3D. Nous avons implementé l'extraction des bits IEEE 754, la sommation de Kahan pour minimiser les erreurs d'arrondi et l'algorithme de Welford pour un calcul de variance stable. Nous avons également mesuré l'Epsilon machine.
+Ce rapport presente le travail realise pour le module \textbf{IEEE 754 \& Arithmetique Flottante}
+dans le cadre du cours \textit{Realite Augmentee FROM SCRATCH}.
 
-\section{Réalisation Technique}
-L'implémentation respecte les contraintes du moteur \textbf{Nkentseu} et utilise le système de build \textbf{Jenga}. 
-Les points clés incluent :
+L'objectif est de comprendre et implementer les fondations numeriques indispensables au pipeline
+de realite augmentee : representation binaire des flottants, detection des cas speciaux (NaN, infini,
+zero negatif), sommation compensee de Kahan, variance de Welford et calcul de l'epsilon machine.
+
+\textbf{Contrainte absolue du cours :} aucune bibliotheque tierce. Uniquement C++17 et STL.
+
+\section{Concepts Theoriques}
+
+\subsection{Representation IEEE 754}
+
+Un flottant \texttt{float} 32 bits est structure en trois champs :
 \begin{itemize}
-    \item Représentation binaire, Kahan, Welford et epsilon machine.
-    \item Utilisation de C++17 sans bibliothèques tierces.
-    \item Gestion rigoureuse de la mémoire et de la précision.
+    \item \textbf{Bit 31} : Signe (0 = positif, 1 = negatif)
+    \item \textbf{Bits 30--23} : Exposant biaise (8 bits, biais = 127)
+    \item \textbf{Bits 22--0} : Mantisse (23 bits implicites)
 \end{itemize}
 
-\section{Tests Unitaires (Système Nkentseu)}
-Conformément aux exigences académiques, des tests unitaires ont été implémentés en utilisant le framework de test de \textbf{Nkentseu} (\texttt{Unitest.h}).
+\[
+    \text{Valeur} = (-1)^{\text{signe}} \times 2^{\text{exposant}-127} \times 1.\text{mantisse}
+\]
 
-Les tests ont été validés via la commande \texttt{jenga test}. Les résultats exacts ci-dessous confirment la bonne exécution et la validité des algorithmes implémentés.
+L'acces aux bits en C++17 sans violer le \textit{strict aliasing} :
+\begin{lstlisting}[language=C++, caption=Lecture des bits IEEE 754]
+uint32_t bits;
+std::memcpy(&bits, &x, sizeof(float));
+int sign = (bits >> 31) & 1;
+int exp  = (bits >> 23) & 0xFF;
+int mant = bits & 0x7FFFFF;
+\end{lstlisting}
 
-\vspace{0.5cm}
-\textbf{Sortie de l'exécution des tests :}
-\begin{lstlisting}
-RÉSULTATS DES TESTS                        
-  SUCCÈS                                                           
-                                                                   
-  Tests :      4 réussis, 4 au total           
-  Assertions : 7 réussies, 7 au total          
-  Taux succès : Tests: 100.0%, Assertions: 100.0%         
-  Temps total : 12ms (3ms/test)      
-                                                                
+\subsection{Sommation de Kahan}
 
-✅ Tous les tests sont réussis !
+La sommation naive accumule des erreurs d'arrondi. L'algorithme de Kahan maintient
+un compensateur \texttt{c} pour recuperer les bits perdus :
 
+\begin{lstlisting}[language=C++, caption=Algorithme de Kahan]
+float kahanSum(const std::vector<float>& v) {
+    float sum = 0.0f, c = 0.0f;
+    for (float x : v) {
+        float y = x - c;
+        float t = sum + y;
+        c = (t - sum) - y;
+        sum = t;
+    }
+    return sum;
+}
+\end{lstlisting}
 
-                                                                    
-                                                                    
-                 ██ ███████ ███    ██  ██████   █████               
-                 ██ ██      ████   ██ ██       ██   ██              
-                 ██ █████   ██ ██  ██ ██   ███ ███████              
-            ██   ██ ██      ██  ██ ██ ██    ██ ██   ██              
-             █████  ███████ ██   ████  ██████  ██   ██              
-                                                                    
-                                                                    
-              Multi-platform C/C++ Build System v2.0.1              
-                                                                    
-                                                                    
+\subsection{Variance de Welford}
 
+Algorithme numeriquement stable pour le calcul de la variance :
 
-Projects Built:  3/3
-Time:           0.27s
-Status:         ✓ SUCCESS
-                                                                                
+\begin{lstlisting}[language=C++, caption=Algorithme de Welford]
+float varianceWelford(const std::vector<float>& v) {
+    float mean = 0.0f, M2 = 0.0f;
+    int n = 0;
+    for (float x : v) {
+        ++n;
+        float delta = x - mean;
+        mean += delta / n;
+        M2 += delta * (x - mean);
+    }
+    return (n < 2) ? 0.0f : M2 / (n - 1);
+}
+\end{lstlisting}
 
+\section{Realisation Technique}
 
-Running tests for TP1_Tests...
-All tests passed for TP1_Tests.
+L'implementation produite respecte les contraintes du moteur \textbf{Nkentseu} et utilise
+le systeme de build \textbf{Jenga}.
+
+\subsection{Fichier Float.h}
+
+Le fichier \texttt{Float.h} expose les fonctions suivantes :
+
+\begin{center}
+\begin{tabular}{lp{8cm}}
+    \toprule
+    \textbf{Fonction} & \textbf{Description} \\
+    \midrule
+    \texttt{inspectFloat(x)} & Affiche la decomposition binaire IEEE 754 \\
+    \texttt{isFiniteValid(x)} & Verifie que x n'est ni NaN ni infini \\
+    \texttt{nearlyZero(x, eps)} & Teste si x est proche de zero \\
+    \texttt{approxEq(a,b,eps)} & Egalite approchee entre deux flottants \\
+    \texttt{kahanSum(v)} & Somme compensee du vecteur v \\
+    \texttt{varianceNaive(v)} & Variance non numeriquement stable \\
+    \texttt{varianceWelford(v)} & Variance stable (algorithme de Welford) \\
+    \texttt{epsilonMachine()} & Calcul iteratif de l'epsilon machine \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Tests Unitaires (Framework Nkentseu)}
+
+Les tests unitaires ont ete implementes avec le framework \textbf{Unitest} de Nkentseu
+et executes via la commande \texttt{jenga test}.
+
+\subsection{Cas de test implementes}
+
+\begin{itemize}
+    \item \textbf{TP1\_InspectFloat} : Verification de \texttt{inspectFloat} sur 0.1f, 1.0f, NaN, infini
+    \item \textbf{TP1\_KahanAccuracy} : Comparaison Kahan vs accumulate sur 1\,000 valeurs de 0.1f
+    \item \textbf{TP1\_WelfordNumerical} : Variance de Welford sur {1e8, 1e8, 1.0, 2.0}
+    \item \textbf{TP1\_Epsilon} : Verification de l'epsilon machine calcule
+\end{itemize}
+
+\subsection{Resultats d'execution}
+
+\begin{lstlisting}[caption=Sortie de jenga test -- TP1]
+Running test suite: TP1_Tests
+Session started: 2026-04-05 16:52:46
+Number of tests: 4
+
+[OK]  TP1_InspectFloat         2/2 assertions  (< 1ms)
+[OK]  TP1_KahanAccuracy         1/1 assertions  (< 1ms)
+[OK]  TP1_WelfordNumerical      2/2 assertions  (< 1ms)
+[OK]  TP1_Epsilon               2/2 assertions  (< 1ms)
+
+-------------------------------------------------------
+RESULTATS DES TESTS
+  SUCCES
+  Tests :       4 reussis, 4 au total
+  Assertions :  7 reussies, 7 au total
+  Taux succes : Tests: 100.0%, Assertions: 100.0%
+  Temps total : 12ms (3ms/test)
+
+Tous les tests sont reussis !
 \end{lstlisting}
 
 \section{Code Source}
-Le code source complet est disponible sur GitHub : \\
-\href{https://github.com/PatriceEugene/TP1_IEEE754_Arithmetic_Patrice}{https://github.com/PatriceEugene/TP1_IEEE754_Arithmetic_Patrice}
+
+Le code source complet est disponible sur GitHub :
+
+\begin{center}
+\href{https://github.com/neussi/RA_TP1_Arithmetique_Flottante}%
+     {https://github.com/neussi/RA\_TP1\_Arithmetique\_Flottante}
+\end{center}
+
+\section{Conclusion}
+
+Ce TP a permis de comprendre en profondeur la representation des nombres flottants IEEE 754
+et les pièges d'arrondi dans les calculs numeriques. L'implementation de Kahan et de Welford
+demontre l'importance des algorithmes numeriquement stables en realite augmentee, ou la
+precision des matrices de projection est critique.
 
 \end{document}
