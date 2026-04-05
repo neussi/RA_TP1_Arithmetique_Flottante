@@ -1,19 +1,10 @@
 #include <iostream>
-#include <cstdint>
-#include <cstring>
 #include <cstdio>
-#include <cmath>
-#include <numeric>
 #include <vector>
-#include <limits>
+#include <numeric>
+#include "Float.h"
 
-// --- TP 1.1: inspectFloat ---
-
-uint32_t floatBits(float f) {
-    uint32_t bits;
-    std::memcpy(&bits, &f, sizeof(float));
-    return bits;
-}
+using namespace NkMath;
 
 void inspectFloat(float f) {
     uint32_t bits = floatBits(f);
@@ -28,62 +19,15 @@ void inspectFloat(float f) {
     printf("  Mantisse : %06X (1.%06X en hex)\n", mantissa, mantissa);
 }
 
-// --- TP 1.2: Kahan et Welford ---
-
-float kahanSum(const float* data, int n) {
-    float sum = 0.0f;
-    float comp = 0.0f;
-    for (int i = 0; i < n; i++) {
-        float y = data[i] - comp;
-        float t = sum + y;
-        comp = (t - sum) - y;
-        sum = t;
-    }
-    return sum;
-}
-
-float varianceNaive(const std::vector<float>& data) {
-    float sum = 0.0f, sum2 = 0.0f;
-    int n = data.size();
-    for (float x : data) {
-        sum += x;
-        sum2 += x * x;
-    }
-    float mean = sum / n;
-    return (sum2 - (sum * sum / n)) / (n - 1);
-}
-
-float varianceWelford(const std::vector<float>& data) {
-    float mean = 0.0f, M2 = 0.0f;
-    int n = data.size();
-    for (int i = 0; i < n; i++) {
-        float delta = data[i] - mean;
-        mean += delta / (i + 1);
-        float delta2 = data[i] - mean;
-        M2 += delta * delta2;
-    }
-    return M2 / (n - 1);
-}
-
-float measureEpsilon() {
-    float eps = 1.0f;
-    while (1.0f + eps / 2.0f != 1.0f) {
-        eps /= 2.0f;
-    }
-    return eps;
-}
-
 int main() {
     printf("=== TP1: IEEE 754 & Arithmetique Flottante ===\n\n");
 
     // 1. inspectFloat tests
     printf("1. Tests de inspectFloat :\n");
-    inspectFloat(0.1f);  // Pourquoi n'est-il pas exact ?
-    inspectFloat(1.0f);  // signe=0, exposant=127, mantisse=0
+    inspectFloat(0.1f);  
+    inspectFloat(1.0f);  
     inspectFloat(1.0f / 0.0f); // +Inf
-    inspectFloat(std::sqrt(-1.0f)); // NaN
-    inspectFloat(-0.0f); // comparer avec +0.0f
-    inspectFloat(std::numeric_limits<float>::min()); // subnormal / min normal
+    inspectFloat(-0.0f); 
     printf("\n");
 
     // 2. Kahan et Welford
@@ -99,14 +43,12 @@ int main() {
 
     std::vector<float> dataVar = {1e8f, 1e8f, 1.0f, 2.0f};
     printf("\n  Variance de {1e8, 1e8, 1, 2} :\n");
-    printf("    Naive   : %.2f\n", varianceNaive(dataVar));
     printf("    Welford : %.2f\n", varianceWelford(dataVar));
 
     // 3. Epsilon
     printf("\n3. Epsilon machine :\n");
     float eps = measureEpsilon();
     printf("    Mesure par boucle : %e\n", eps);
-    printf("    std::numeric_limits: %e\n", std::numeric_limits<float>::epsilon());
 
     return 0;
 }

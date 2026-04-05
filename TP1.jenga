@@ -5,10 +5,29 @@ with workspace("TP_RA_Patrice", location="."):
     targetoses([TargetOS.LINUX])
     targetarchs([TargetArch.X86_64])
 
+    with unitest() as u:
+        # Configuration par defaut pour compiler le systeme de test si necessaire
+        u.Compile()
+
     with project("TP1"):
         consoleapp()
         language("C++")
         cppdialect("C++17")
         files(["main.cpp"])
+        
+        # Include paths
+        includedirs([
+            ".",
+            "/home/npe-tech/Coder-pour-AR-4AIA/Jenga/Jenga/Unitest/src"
+        ])
+        
         objdir("Build/Obj/%{cfg.buildcfg}/%{prj.name}")
         targetdir("Build/Bin/%{cfg.buildcfg}")
+
+        # Unit Tests
+        with test():
+            testfiles(["tests/**.cpp"])
+            includedirs([
+                ".",
+                "/home/npe-tech/Coder-pour-AR-4AIA/Jenga/Jenga/Unitest/src"
+            ])

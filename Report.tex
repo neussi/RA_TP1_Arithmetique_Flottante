@@ -2,33 +2,89 @@
 \usepackage[utf8]{inputenc}
 \usepackage[french]{babel}
 \usepackage[T1]{fontenc}
-\usepackage{amsmath, amsfonts, amssymb, graphicx, geometry, xcolor, titlesec, hyperref}
+\usepackage{amsmath, amsfonts, amssymb, graphicx, geometry, xcolor, titlesec, hyperref, listings}
 
 \geometry{margin=2.5cm}
 \titleformat{\section}{\Large\bfseries\color{blue!70!black}}{}{0em}{}
-\titleformat{\subsection}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\large\bfseries\color{black!80}}{}{0em}{}
+
+\lstset{
+    language=bash,
+    basicstyle=\ttfamily\scriptsize,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{black!5}
+}
 
 \title{Rapport de Travaux Pratiques — TP1 \\ \large IEEE 754 & Arithmetique Flottante}
-\author{NEUSSI NJIETCHEU PATRICE EUGNE \\ Matricule : 24P820}
-\date{Dimanche 5 Avril 2026}
+\author{NEUSSI NJIETCHEU PATRICE EUGÈNE \\ Matricule : 24P820}
+\date{\today}
 
 \begin{document}
 \maketitle
 
 \section{Introduction}
-Ce document présente la réalisation du TP pour la semaine correspondant au module sur \textbf{IEEE 754 & Arithmetique Flottante}.
-L'objectif principal était de: Représentation binaire, Kahan, Welford et epsilon machine.
+Ce document présente le travail réalisé pour le module sur \textbf{IEEE 754 & Arithmetique Flottante}.
+L'objectif est d'implémenter les algorithmes fondamentaux en partant de zéro (Zero STL, C++17).
 
-\section{Realisation technique}
-L'implementation a ete faite en C++17 en suivant les regles du cours (Zero STL, Only Standard Headers).
-Le systeme de build \textbf{Jenga} a ete utilise pour la compilation.
+\section{Concepts Théoriques}
+Ce TP traite de la precision numerique indispensable en simulation 3D. Nous avons implementé l'extraction des bits IEEE 754, la sommation de Kahan pour minimiser les erreurs d'arrondi et l'algorithme de Welford pour un calcul de variance stable. Nous avons également mesuré l'Epsilon machine.
 
-\section{Resultats}
-Le programme a ete compile et execute avec succes sur Linux.
-Les resultats obtenus sont conformes aux attentes theoriques.
+\section{Réalisation Technique}
+L'implémentation respecte les contraintes du moteur \textbf{Nkentseu} et utilise le système de build \textbf{Jenga}. 
+Les points clés incluent :
+\begin{itemize}
+    \item Représentation binaire, Kahan, Welford et epsilon machine.
+    \item Utilisation de C++17 sans bibliothèques tierces.
+    \item Gestion rigoureuse de la mémoire et de la précision.
+\end{itemize}
+
+\section{Tests Unitaires (Système Nkentseu)}
+Conformément aux exigences académiques, des tests unitaires ont été implémentés en utilisant le framework de test de \textbf{Nkentseu} (\texttt{Unitest.h}).
+
+Les tests ont été validés via la commande \texttt{jenga test}. Les résultats exacts ci-dessous confirment la bonne exécution et la validité des algorithmes implémentés.
+
+\vspace{0.5cm}
+\textbf{Sortie de l'exécution des tests :}
+\begin{lstlisting}
+RÉSULTATS DES TESTS                        
+  SUCCÈS                                                           
+                                                                   
+  Tests :      4 réussis, 4 au total           
+  Assertions : 7 réussies, 7 au total          
+  Taux succès : Tests: 100.0%, Assertions: 100.0%         
+  Temps total : 12ms (3ms/test)      
+                                                                
+
+✅ Tous les tests sont réussis !
+
+
+                                                                    
+                                                                    
+                 ██ ███████ ███    ██  ██████   █████               
+                 ██ ██      ████   ██ ██       ██   ██              
+                 ██ █████   ██ ██  ██ ██   ███ ███████              
+            ██   ██ ██      ██  ██ ██ ██    ██ ██   ██              
+             █████  ███████ ██   ████  ██████  ██   ██              
+                                                                    
+                                                                    
+              Multi-platform C/C++ Build System v2.0.1              
+                                                                    
+                                                                    
+
+
+Projects Built:  3/3
+Time:           0.27s
+Status:         ✓ SUCCESS
+                                                                                
+
+
+Running tests for TP1_Tests...
+All tests passed for TP1_Tests.
+\end{lstlisting}
 
 \section{Code Source}
-Le code source complet est disponible sur le depot GitHub associe : \\
-\texttt{https://github.com/PatriceEugene/TP1_IEEE754_Arithmetic_Patrice}
+Le code source complet est disponible sur GitHub : \\
+\href{https://github.com/PatriceEugene/TP1_IEEE754_Arithmetic_Patrice}{https://github.com/PatriceEugene/TP1_IEEE754_Arithmetic_Patrice}
 
 \end{document}

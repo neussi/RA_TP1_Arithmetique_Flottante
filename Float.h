@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <algorithm>
+#include <vector>
 
 namespace NkMath {
 
@@ -26,17 +27,47 @@ namespace NkMath {
         return std::abs(a - b) <= eps * std::max(1.0, maxAB);
     }
 
-    // Sommation de Kahan
-    inline double kahanSum(const double* data, int n) {
-        double sum = 0.0;
-        double comp = 0.0;
+    // 1.1 Extraction bits
+    inline uint32_t floatBits(float f) {
+        uint32_t bits;
+        std::memcpy(&bits, &f, sizeof(float));
+        return bits;
+    }
+
+    // 1.2 Sommation de Kahan
+    inline float kahanSum(const float* data, int n) {
+        float sum = 0.0f;
+        float comp = 0.0f;
         for (int i = 0; i < n; i++) {
-            double y = data[i] - comp;
-            double t = sum + y;
+            float y = data[i] - comp;
+            float t = sum + y;
             comp = (t - sum) - y;
             sum = t;
         }
         return sum;
+    }
+
+    // 1.2 Variance de Welford
+    inline float varianceWelford(const std::vector<float>& data) {
+        float mean = 0.0f, M2 = 0.0f;
+        int n = data.size();
+        if (n < 2) return 0.0f;
+        for (int i = 0; i < n; i++) {
+            float delta = data[i] - mean;
+            mean += delta / (i + 1);
+            float delta2 = data[i] - mean;
+            M2 += delta * delta2;
+        }
+        return M2 / (n - 1);
+    }
+
+    // 1.3 Machine Epsilon
+    inline float measureEpsilon() {
+        float eps = 1.0f;
+        while (1.0f + eps / 2.0f != 1.0f) {
+            eps /= 2.0f;
+        }
+        return eps;
     }
 
 } // namespace NkMath
